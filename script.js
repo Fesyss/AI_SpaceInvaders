@@ -262,7 +262,7 @@ function init() {
           {
             x: this.coordinates.x + this.size.width / 2 - 1,
             y: this.coordinates.y - 1,
-          },
+          },  
           {
             x: 0,
             y: -7,
