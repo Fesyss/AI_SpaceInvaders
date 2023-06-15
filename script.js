@@ -1,6 +1,4 @@
 "use strict";
-console.log(brain);
-
 function init() {
   // General
   var canvas, screen, gameSize, game;
@@ -8,7 +6,7 @@ function init() {
   // Assets
   var invaderCanvas,
     invaderMultiplier,
-    invaderSize = 20.3,
+    invaderSize = 20.5,
     initialOffsetInvader,
     invaderAttackRate,
     invaderSpeed,
@@ -42,7 +40,7 @@ function init() {
     this.invaderShots = [];
 
     const moveInvaders = () => {
-      // keyState[37] = true;
+   
 
       function getRandomInt(max) {
         return Math.floor(Math.random() * max) + 1;
@@ -51,7 +49,7 @@ function init() {
       const randomValue = getRandomInt(3);
       const randomBoolean = getRandomInt(2) === 1;
 
-      console.log(this.player.keyboarder.keyState, randomValue);
+      //console.log(this.player.keyboarder.keyState, randomValue);
 
    
 
@@ -226,37 +224,38 @@ function init() {
   Player.prototype = {
     
     update: function () {
-      // Рух гравця
-      var playerSpeed = 2; // Швидкість руху гравця
-      var maxDeviation = 70; // Максимальне відхилення гравця
+
+      var playerSpeed = 2; // Player speed
+      var maxDeviation = 70; // The max Deviation of player 
 
       if (!this.active) return;
 
-      // Рух гравця вправо або вліво ухиляючись від найближчого пострілу ворогів
-      var closestShot = findClosestShot(game.invaderShots); // Знаходження найближчого пострілу ворогів
+      // Movement of the player to the right or left, dodging the nearest shot of the enemies
+      var closestShot = findClosestShot(game.invaderShots); 
       if (closestShot) {
         var direction = 0;
         if (
             this.coordinates.x - playerSpeed <=  gameSize.width / 2 - maxDeviation
           )
-            direction = 1; // Рух гравця вліво
+          // Movement of the player to the left
+            direction = 1; 
             else if (
             this.coordinates.x + playerSpeed >= gameSize.width / 2 + maxDeviation
           )
             direction = -1;
         else if (closestShot.coordinates.x < this.coordinates.x) 
-          // Ворог знаходиться лівіше гравця
+          // The enemy is to the left of the player
           direction = 1;
          else if (closestShot.coordinates.x > this.coordinates.x) 
          direction = -1;
-          // Ворог знаходиться правіше гравця
-           // Рух гравця вправо
+          // The enemy is to the right of the player
+           // Movement of the player to the right
         
 
         this.coordinates.x += playerSpeed * direction;
       }
 
-      // Стрільба гравця
+      // Player shoots 
       this.shooterHeat += 1;
       if (this.shooterHeat < 0) {
         var projectile = new Projectile(
@@ -272,7 +271,7 @@ function init() {
         this.projectile.push(projectile);
       } else if (this.shooterHeat > 12) this.shooterHeat = -3;
 
-      // Оновлення проектілів гравця
+      // Updating the player's projectiles
       for (var i = 0; i < this.projectile.length; i++) this.projectile[i].update();
 
       this.projectile = this.projectile.filter(function (projectile) {
@@ -296,7 +295,7 @@ function init() {
   };
 
   function findClosestShot(shots) {
-    // Знаходить найближчий постріл серед заданого масиву пострілів
+    // Finds the closest shot among the given array of shots
     var closestShot = null;
     var closestDistance = Infinity;
     for (var i = 0; i < shots.length; i++) {
@@ -442,9 +441,6 @@ function init() {
   window.addEventListener("resize", function () {
     initGameStart();
   });
-  document.getElementById("restart").addEventListener("click", function () {
-    initGameStart();
-  });
 
   function initGameStart() {
     if (window.innerWidth > 1200) {
@@ -493,5 +489,3 @@ function init() {
 }
 
 init();
-
-// document.location.reload();

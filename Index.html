@@ -5,17 +5,15 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
-
-    <script src="//unpkg.com/brain.js"></script>
+    <link rel="stylesheet" href="style.css">
     <script src="script.js"></script>
 </head>
 <body>
     <p class="center">Space Invadors destroyed this page! Take revenge on them!
         <br/> Use <span class="label label-danger">space </span> to shoot and <span class="label label-danger">←</span>&#160;<span class="label label-danger">→</span> to move!&#160;&#160;&#160;</p>
-      <button type="button" onClick="window.location.reload()">
+      <canvas id="space-invaders"></canvas>
+      <button class="button" type="button" onClick="window.location.reload()" id="button">
         Restart
       </button>
-      <canvas id="space-invaders"></canvas>
-      <div id="diagram"></div>
 </body>
 </html>
