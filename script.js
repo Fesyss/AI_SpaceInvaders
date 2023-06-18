@@ -1,4 +1,44 @@
 "use strict";
+import mockedTrainingData from "./trainingData.js";
+
+const messageRef = document.getElementById("message");
+
+messageRef.textContent = `Net is training with ${mockedTrainingData.length} items...`;
+
+console.log(messageRef.textContent);
+
+const net = new brain.NeuralNetwork({
+  inputSize: 6,
+  inputRange: 1,
+  hiddenLayers: [5, 5],
+  outputSize: 2,
+  // learningRate: 0.01,
+  // decayRate: 0.999,
+});
+console.log(messageRef);
+
+const LOCAL_STORAGE_TRAINING_DATA_KEY = "training-data";
+const localTrainingData = JSON.parse(
+  localStorage.getItem(LOCAL_STORAGE_TRAINING_DATA_KEY) || "[]"
+);
+let trainingData = localTrainingData || [];
+
+const trainNet = () =>
+  net.train(mockedTrainingData, {
+    iterations: 50000,
+    log: (stats) =>
+      (messageRef.textContent = `Net is training with ${
+      mockedTrainingData.length
+      } items. Progress ${(stats.iterations / 10000) * 100}%`),
+  });
+
+trainNet();
+
+messageRef.textContent = "";
+
+// const diagram = document.getElementById("net-diagram");
+// diagram.innerHTML = brain.utilities.toSVG(net);
+
 function init() {
   // General
   var canvas, screen, gameSize, game;
@@ -6,7 +46,7 @@ function init() {
   // Assets
   var invaderCanvas,
     invaderMultiplier,
-    invaderSize = 20.5,
+    invaderSize = 20,
     initialOffsetInvader,
     invaderAttackRate,
     invaderSpeed,
@@ -17,16 +57,17 @@ function init() {
     kills = 0,
     spawnDelayCounter = invaderSpawnDelay;
 
-  var invaderDownTimer;
+  var invaderDownTimer, netTimer, AIdecisionTimer;
 
   // Text
   var blocks = [
-    [8, 9, 12],
-    [7, 10, 12],
-    [7, 10, 12],
-    [7, 8, 9, 10, 12],
-    [7, 10, 12],
-    [7, 10, 12],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [7,],
+    // [7],
   ];
 
   // Game Controller
@@ -40,28 +81,163 @@ function init() {
     this.invaderShots = [];
 
     const moveInvaders = () => {
-   
+      // function getRandomInt(max) {
+      //   return Math.floor(Math.random() * max) + 1;
+      // }
 
-      function getRandomInt(max) {
-        return Math.floor(Math.random() * max) + 1;
-      }
+      // const randomValue = getRandomInt(3);
+      // const randomBoolean = getRandomInt(2) === 1;
 
-      const randomValue = getRandomInt(3);
-      const randomBoolean = getRandomInt(2) === 1;
+      // this.player.keyboarder.keyState[
+      //   Object.values(his.player.keyboarder.keyState)[randomValue - 1]
+      // ] = randomBoolean;
 
-      //console.log(this.player.keyboarder.keyState, randomValue);
-
-   
-
-      this.player.keyboarder.keyState[
-        Object.values(this.player.keyboarder.KEYS)[randomValue - 1]
-      ] = randomBoolean;
+      updateTrainingData(trainingData);
 
       for (i = 0; i < game.invaders.length; i++) game.invaders[i].move();
     };
 
     if (invaderDownTimer === undefined) {
       invaderDownTimer = setInterval(moveInvaders, 1000 - this.level * 1.8);
+    }
+
+    const getNormalizedY = (y) => {
+      return Math.min(y / gameSize.height, 1);
+    };
+
+    const getNormalizedX = (x) => {
+      return Math.min(x / gameSize.width, 1);
+    };
+
+    const getCloserInvader = () => {
+      const closerInvader = this.invaders.reduce((prev, curr) => {
+        return Math.abs(curr.coordinates.x - this.player.coordinates.x) <
+          Math.abs(prev.coordinates.x - this.player.coordinates.x)
+          ? curr
+          : prev;
+      });
+      return closerInvader;
+    };
+
+    const getCloserInvaderShot = () => {
+      const closerInvaderShot = this.invaderShots.reduce((prev, curr) => {
+        return Math.abs(curr.coordinates.x - this.player.coordinates.x) <
+          Math.abs(prev.coordinates.x - this.player.coordinates.x)
+          ? curr
+          : prev;
+      });
+      return closerInvaderShot;
+    };
+
+    const getTupleToCloserInvader = () => {
+      const closerInvader = getCloserInvader();
+      return [
+        getNormalizedX(Math.abs(closerInvader.coordinates.x - this.player.coordinates.x)),
+        getNormalizedY(Math.abs(closerInvader.coordinates.y - this.player.coordinates.y)),
+      ];
+    };
+
+    const getTupleToCloserInvaderShot = () => {
+      const closerInvaderShot = getCloserInvaderShot();
+      return [
+        getNormalizedX(Math.abs(closerInvaderShot.coordinates.x - this.player.coordinates.x)),
+        getNormalizedY(Math.abs(closerInvaderShot.coordinates.y - this.player.coordinates.y)),
+      ];
+    };
+
+    const getTupleToPlayer = () => {
+      return [
+        getNormalizedX(this.player.coordinates.x),
+        getNormalizedY(this.player.coordinates.y),
+      ];
+    };
+
+    const getTrainingData = () => {
+      const trainingData = {
+        input: [],
+        output: [],
+      };
+
+      trainingData.input = [
+        ...getTupleToCloserInvader(),
+        ...getTupleToCloserInvaderShot(),
+        ...getTupleToPlayer(),
+      ];
+
+      const KEYS = this.player.keyboarder.KEYS;
+      const isDown = this.player.keyboarder.isDown.bind(this.player.keyboarder);
+
+      let positionFactor = 0;
+      let shotFactor = 0;
+
+      if (isDown(KEYS.LEFT)) {
+        positionFactor = 0.66;
+      }
+
+      if (isDown(KEYS.RIGHT)) {
+        positionFactor = 1;
+      }
+
+      if (isDown(KEYS.Space)) {
+        shotFactor = 1;
+      }
+
+      trainingData.output = [positionFactor, shotFactor];
+
+      return trainingData;
+    };
+
+    const updateTrainingData = () => {
+      trainingData.push(getTrainingData());
+
+      if (this.lost) {
+        if (this.skipSaving) {
+          return;
+        }
+        localStorage.setItem(
+          LOCAL_STORAGE_TRAINING_DATA_KEY,
+          JSON.stringify(trainingData.slice(0, -2))
+        );
+        this.skipSaving = true;
+      }
+
+      localStorage.setItem(LOCAL_STORAGE_TRAINING_DATA_KEY, JSON.stringify(trainingData));
+    };
+
+    const makeAIdecision = () => {
+      const decision = net.run(getTrainingData().input);
+
+      const KEYS = this.player.keyboarder.KEYS;
+      const keyState = this.player.keyboarder.keyState;
+
+      console.log(decision);
+
+      if (decision[0] <= 0.33) {
+        keyState[KEYS.LEFT] = false;
+        keyState[KEYS.RIGHT] = false;
+      }
+      if (decision[0] >= 0.66) {
+        keyState[KEYS.LEFT] = false;
+        keyState[KEYS.RIGHT] = true;
+      }
+      if (decision[0] > 0.33 && decision[0] < 0.66) {
+        keyState[KEYS.LEFT] = true;
+        keyState[KEYS.RIGHT] = false;
+      }
+
+      if (decision[1] > 0.5) {
+        keyState[KEYS.Space] = true;
+      } else {
+        keyState[KEYS.Space] = false;
+      }
+    };
+
+    if (netTimer === undefined) {
+      netTimer = setInterval(updateTrainingData, 1000);
+    }
+
+    if (AIdecisionTimer === undefined) {
+      AIdecisionTimer = setInterval(makeAIdecision, 50);
     }
   };
 
@@ -222,61 +398,41 @@ function init() {
   };
 
   Player.prototype = {
-    
     update: function () {
-
-      var playerSpeed = 2; // Player speed
-      var maxDeviation = 70; // The max Deviation of player 
-
-      if (!this.active) return;
-
-      // Movement of the player to the right or left, dodging the nearest shot of the enemies
-      var closestShot = findClosestShot(game.invaderShots); 
-      if (closestShot) {
-        var direction = 0;
-        if (
-            this.coordinates.x - playerSpeed <=  gameSize.width / 2 - maxDeviation
-          )
-          // Movement of the player to the left
-            direction = 1; 
-            else if (
-            this.coordinates.x + playerSpeed >= gameSize.width / 2 + maxDeviation
-          )
-            direction = -1;
-        else if (closestShot.coordinates.x < this.coordinates.x) 
-          // The enemy is to the left of the player
-          direction = 1;
-         else if (closestShot.coordinates.x > this.coordinates.x) 
-         direction = -1;
-          // The enemy is to the right of the player
-           // Movement of the player to the right
-        
-
-        this.coordinates.x += playerSpeed * direction;
-      }
-
-      // Player shoots 
-      this.shooterHeat += 1;
-      if (this.shooterHeat < 0) {
-        var projectile = new Projectile(
-          {
-            x: this.coordinates.x + this.size.width / 2 - 1,
-            y: this.coordinates.y - 1,
-          },  
-          {
-            x: 0,
-            y: -7,
-          }
-        );
-        this.projectile.push(projectile);
-      } else if (this.shooterHeat > 12) this.shooterHeat = -3;
-
-      // Updating the player's projectiles
       for (var i = 0; i < this.projectile.length; i++) this.projectile[i].update();
 
       this.projectile = this.projectile.filter(function (projectile) {
         return projectile.active;
       });
+
+      if (!this.active) return;
+
+      if (this.keyboarder.isDown(this.keyboarder.KEYS.LEFT) && this.coordinates.x > 0)
+        this.coordinates.x -= 2;
+      else if (
+        this.keyboarder.isDown(this.keyboarder.KEYS.RIGHT) &&
+        this.coordinates.x < gameSize.width - this.size.width
+      )
+        this.coordinates.x += 2;
+
+      if (this.keyboarder.isDown(this.keyboarder.KEYS.Space)) {
+        this.shooterHeat += 1;
+        if (this.shooterHeat < 0) {
+          var projectile = new Projectile(
+            {
+              x: this.coordinates.x + this.size.width / 2 - 1,
+              y: this.coordinates.y - 1,
+            },
+            {
+              x: 0,
+              y: -7,
+            }
+          );
+          this.projectile.push(projectile);
+        } else if (this.shooterHeat > 12) this.shooterHeat = -3;
+      } else {
+        this.shooterHeat = -3;
+      }
     },
     draw: function () {
       if (this.active) {
@@ -291,26 +447,7 @@ function init() {
       this.active = false;
       game.lost = true;
     },
-    
   };
-
-  function findClosestShot(shots) {
-    // Finds the closest shot among the given array of shots
-    var closestShot = null;
-    var closestDistance = Infinity;
-    for (var i = 0; i < shots.length; i++) {
-      var shot = shots[i];
-      var distance = Math.sqrt(
-        Math.pow(shot.coordinates.x - game.player.coordinates.x, 2) +
-          Math.pow(shot.coordinates.y - game.player.coordinates.y, 2)
-      );
-      if (distance < closestDistance) {
-        closestShot = shot;
-        closestDistance = distance;
-      }
-    }
-    return closestShot;
-  }
 
   // Projectile
   // ------
@@ -441,6 +578,9 @@ function init() {
   window.addEventListener("resize", function () {
     initGameStart();
   });
+  document.getElementById("restart").addEventListener("click", function () {
+    initGameStart();
+  });
 
   function initGameStart() {
     if (window.innerWidth > 1200) {
@@ -489,3 +629,27 @@ function init() {
 }
 
 init();
+
+const loadTrainingData = () => {
+  const dataStr = JSON.stringify(trainingData);
+
+  const dataUri = "data:application/json;charset=utf-8," + encodeURIComponent(dataStr);
+  const link = document.createElement("a");
+
+  link.setAttribute("href", dataUri);
+  link.setAttribute("download", "trainingData.json");
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
+const clearTrainingData = () => {
+  trainingData = [];
+  localStorage.setItem(LOCAL_STORAGE_TRAINING_DATA_KEY, JSON.stringify([]));
+};
+
+const loadBtnRef = document.querySelector("#load-btn");
+loadBtnRef.addEventListener("click", loadTrainingData);
+
+const clearBtnRef = document.querySelector("#clear-data-btn");
+clearBtnRef.addEventListener("click", clearTrainingData);

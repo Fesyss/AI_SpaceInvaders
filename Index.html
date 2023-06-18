@@ -1,17 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Document</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="script.js"></script>
-</head>
-<body>
-      <canvas id="space-invaders"></canvas>
-      <button class="button" type="button" onClick="window.location.reload()" id="button">
+    <script defer src="//unpkg.com/brain.js"></script>
+    <script defer src="script.js" type="module"></script>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <section class="game-section">
+      <p class="center">
+        Space Invadors destroyed this page! Take revenge on them! <br />
+        Use <span class="label label-danger">space </span> to shoot and
+        <span class="label label-danger">←</span>&#160;<span class="label label-danger">→</span> to
+        move!&#160;&#160;&#160;
+      </p>
+      <canvas id="space-invaders"> </canvas>
+      <button id="restart" type="button" class="restart-btn" onClick="window.location.reload()">
         Restart
       </button>
-</body>
+      <div class="buttons-wrapper">
+        <button id="load-btn" type="button" class="restart-btn">Download training data</button>
+        <button id="clear-data-btn" type="button" class="restart-btn">Clear training data</button>
+      </div>
+      <h2 class="center" id="message"></h2>
+    </section>
+    <div id="net-diagram"></div>
+  </body>
 </html>
